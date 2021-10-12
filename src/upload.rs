@@ -15,6 +15,7 @@ pub fn put(filename: &str, url: &str) -> Result<()> {
     let res = client
         .put(url)
         .header("x-ms-blob-type", "BlockBlob")
+        .header("Content-Type", "binary/octet-stream")
         .body(file)
         .send()
         .context("unable to PUT file")?;

@@ -13,19 +13,19 @@ use std::fs::remove_file;
 use std::{fs::metadata, ops::Range};
 
 fn kcore(ranges: &[std::ops::Range<u64>], filename: &str, version: u32) -> Result<()> {
-    if metadata("/proc/kcore")?.len() < 0x2000 {
+    if metadata("/host/proc/kcore")?.len() < 0x2000 {
         bail!("locked down kcore");
     }
 
     let mut image =
-        avml::image::Image::new(version, "/proc/kcore", filename).with_context(|| {
+        avml::image::Image::new(version, "/host/proc/kcore", filename).with_context(|| {
             format!(
-                "unable to create image. source: /proc/kcore destination: {}",
+                "unable to create image. source: /host/proc/kcore destination: {}",
                 filename
             )
         })?;
     let mut file = elf::File::open_stream(&mut image.src)
-        .map_err(|e| anyhow!("unable to parse ELF structures from /proc/kcore: {:?}", e))?;
+        .map_err(|e| anyhow!("unable to parse ELF structures from /host/proc/kcore: {:?}", e))?;
     file.phdrs.retain(|&x| x.progtype == elf::types::PT_LOAD);
     file.phdrs.sort_by(|a, b| a.vaddr.cmp(&b.vaddr));
     let start = file.phdrs[0].vaddr - ranges[0].start;
@@ -54,7 +54,7 @@ fn phys(ranges: &[std::ops::Range<u64>], filename: &str, mem: &str, version: u32
         )
     })?;
     for range in ranges {
-        let end = if mem == "/dev/crash" {
+        let end = if mem == "/host/dev/crash" {
             (range.end >> 12) << 12
         } else {
             range.end
@@ -88,27 +88,27 @@ fn get_mem(src: Option<&str>, dst: &str, version: u32) -> Result<()> {
 
     if let Some(source) = src {
         match source {
-            "/proc/kcore" => kcore(&ranges, dst, version)?,
-            "/dev/crash" => phys(&ranges, dst, "/dev/crash", version)?,
-            "/dev/mem" => phys(&ranges, dst, "/dev/mem", version)?,
+            "/host/proc/kcore" => kcore(&ranges, dst, version)?,
+            "/host/dev/crash" => phys(&ranges, dst, "/host/dev/crash", version)?,
+            "/host/dev/mem" => phys(&ranges, dst, "/host/dev/mem", version)?,
             _ => unimplemented!(),
         };
     }
 
-    let crash_err = try_method!(phys(&ranges, dst, "/dev/crash", version));
+    let crash_err = try_method!(phys(&ranges, dst, "/host/dev/crash", version));
     let kcore_err = try_method!(kcore(&ranges, dst, version));
-    let devmem_err = try_method!(phys(&ranges, dst, "/dev/mem", version));
+    let devmem_err = try_method!(phys(&ranges, dst, "/host/dev/mem", version));
 
     eprintln!("unable to read memory");
-    eprintln!("/dev/crash failed: {:?}", crash_err);
-    eprintln!("/proc/kcore failed: {:?}", kcore_err);
-    eprintln!("/dev/mem failed: {:?}", devmem_err);
+    eprintln!("/host/dev/crash failed: {:?}", crash_err);
+    eprintln!("/host/proc/kcore failed: {:?}", kcore_err);
+    eprintln!("/host/dev/mem failed: {:?}", devmem_err);
 
     bail!("unable to read physical memory")
 }
 
 fn main() -> Result<()> {
-    let sources = vec!["/proc/kcore", "/dev/crash", "/dev/mem"];
+    let sources = vec!["/host/proc/kcore", "/host/dev/crash", "/host/dev/mem"];
     let args = App::new(crate_name!())
         .author(crate_authors!())
         .about(crate_description!())

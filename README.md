@@ -20,9 +20,9 @@ or kernel a priori.  No on-target compilation or fingerprinting is needed.
 * Uses [LiME](https://github.com/504ensicsLabs/LiME/) output format (when not using compression).
 
 ## Memory Sources
-* /dev/crash
-* /proc/kcore
-* /dev/mem
+* /host/dev/crash
+* /host/proc/kcore
+* /host/dev/mem
 
 If the memory source is not specified on the commandline, AVML will iterate over the memory sources to find a functional source.
 
@@ -113,7 +113,7 @@ FLAGS:
 OPTIONS:
         --sas_block_size <sas_block_size>    specify maximum block size in MiB
         --sas_url <sas_url>                  Upload via Azure Blob Store upon acquisition
-        --source <source>                    specify input source [possible values: /proc/kcore, /dev/crash, /dev/mem]
+        --source <source>                    specify input source [possible values: /host/proc/kcore, /host/devcrash, /host/devmem]
         --url <url>                          Upload via HTTP PUT upon acquisition.
 
 ARGS:
